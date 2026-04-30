@@ -3105,6 +3105,8 @@ DEFAULT_RAG_TEMPLATE = """### Task:
 Respond to the user query using the provided context, incorporating inline citations in the format [id] **only when the <source> tag includes an explicit id attribute** (e.g., <source id="1">).
 
 ### Guidelines:
+- Today's date is {{CURRENT_DATE}}.
+- Interpret relative dates such as "today", "yesterday", and "tomorrow" using this date.
 - If you don't know the answer, clearly state that.
 - If uncertain, ask the user for clarification.
 - Respond in the same language as the user's query.

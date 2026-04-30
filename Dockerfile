@@ -22,10 +22,28 @@ ARG BUILD_HASH=dev-build
 # Override at your own risk - non-root configurations are untested
 ARG UID=0
 ARG GID=0
+ARG HTTP_PROXY=http://10.32.243.2:80
+ARG HTTPS_PROXY=http://10.32.243.2:80
+ARG NO_PROXY=localhost,127.0.0.1
 
 ######## WebUI frontend ########
 FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
 ARG BUILD_HASH
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+ENV http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    npm_config_proxy=${HTTP_PROXY} \
+    npm_config_https_proxy=${HTTPS_PROXY} \
+    NPM_CONFIG_PROXY=${HTTP_PROXY} \
+    NPM_CONFIG_HTTPS_PROXY=${HTTPS_PROXY} \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    no_proxy=${NO_PROXY} \
+    NO_PROXY=${NO_PROXY}
 
 # Set Node.js options (heap limit Allocation failed - JavaScript heap out of memory)
 # ENV NODE_OPTIONS="--max-old-space-size=4096"
@@ -36,7 +54,7 @@ WORKDIR /app
 RUN apk add --no-cache git
 
 COPY package.json package-lock.json ./
-RUN npm ci --force
+RUN npm ci --force --ignore-scripts
 
 COPY . .
 ENV APP_BUILD_HASH=${BUILD_HASH}
@@ -56,9 +74,18 @@ ARG USE_RERANKING_MODEL
 ARG USE_AUXILIARY_EMBEDDING_MODEL
 ARG UID
 ARG GID
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
 
 # Python settings
 ENV PYTHONUNBUFFERED=1
+ENV http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    no_proxy=${NO_PROXY} \
+    NO_PROXY=${NO_PROXY}
 
 ## Basis ##
 ENV ENV=prod \

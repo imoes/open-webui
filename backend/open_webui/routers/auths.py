@@ -48,11 +48,34 @@ from fastapi.responses import RedirectResponse, Response, JSONResponse
 from open_webui.config import (
     OPENID_PROVIDER_URL,
     OPENID_END_SESSION_ENDPOINT,
+    OPENID_REDIRECT_URI,
     ENABLE_OAUTH_SIGNUP,
     ENABLE_LDAP,
     ENABLE_PASSWORD_AUTH,
     OAUTH_PROVIDERS,
     OAUTH_MERGE_ACCOUNTS_BY_EMAIL,
+    OAUTH_CLIENT_ID,
+    OAUTH_CLIENT_SECRET,
+    OAUTH_SCOPES,
+    OAUTH_TOKEN_ENDPOINT_AUTH_METHOD,
+    OAUTH_CODE_CHALLENGE_METHOD,
+    OAUTH_PROVIDER_NAME,
+    OAUTH_SUB_CLAIM,
+    OAUTH_USERNAME_CLAIM,
+    OAUTH_EMAIL_CLAIM,
+    OAUTH_PICTURE_CLAIM,
+    OAUTH_GROUPS_CLAIM,
+    OAUTH_ROLES_CLAIM,
+    OAUTH_ALLOWED_ROLES,
+    OAUTH_ADMIN_ROLES,
+    OAUTH_ALLOWED_DOMAINS,
+    ENABLE_OAUTH_ROLE_MANAGEMENT,
+    ENABLE_OAUTH_GROUP_MANAGEMENT,
+    ENABLE_OAUTH_GROUP_CREATION,
+    OAUTH_UPDATE_PICTURE_ON_LOGIN,
+    OAUTH_UPDATE_NAME_ON_LOGIN,
+    OAUTH_UPDATE_EMAIL_ON_LOGIN,
+    load_oauth_providers,
 )
 from open_webui.utils.oauth import auth_manager_config
 from pydantic import BaseModel
@@ -1230,6 +1253,115 @@ class LdapConfigForm(BaseModel):
 async def update_ldap_config(request: Request, form_data: LdapConfigForm, user=Depends(get_admin_user)):
     request.app.state.config.ENABLE_LDAP = form_data.enable_ldap
     return {'ENABLE_LDAP': request.app.state.config.ENABLE_LDAP}
+
+
+############################
+# OAuth / OIDC Config
+############################
+
+
+@router.get('/admin/config/oauth')
+async def get_oauth_config(request: Request, user=Depends(get_admin_user)):
+    return {
+        'ENABLE_OAUTH_SIGNUP': request.app.state.config.ENABLE_OAUTH_SIGNUP,
+        'OAUTH_MERGE_ACCOUNTS_BY_EMAIL': request.app.state.config.OAUTH_MERGE_ACCOUNTS_BY_EMAIL,
+        'OAUTH_PROVIDER_NAME': request.app.state.config.OAUTH_PROVIDER_NAME,
+        'OAUTH_CLIENT_ID': request.app.state.config.OAUTH_CLIENT_ID,
+        'OAUTH_CLIENT_SECRET': request.app.state.config.OAUTH_CLIENT_SECRET,
+        'OPENID_PROVIDER_URL': request.app.state.config.OPENID_PROVIDER_URL,
+        'OPENID_REDIRECT_URI': request.app.state.config.OPENID_REDIRECT_URI,
+        'OPENID_END_SESSION_ENDPOINT': request.app.state.config.OPENID_END_SESSION_ENDPOINT,
+        'OAUTH_SCOPES': request.app.state.config.OAUTH_SCOPES,
+        'OAUTH_TOKEN_ENDPOINT_AUTH_METHOD': request.app.state.config.OAUTH_TOKEN_ENDPOINT_AUTH_METHOD,
+        'OAUTH_CODE_CHALLENGE_METHOD': request.app.state.config.OAUTH_CODE_CHALLENGE_METHOD,
+        'OAUTH_SUB_CLAIM': request.app.state.config.OAUTH_SUB_CLAIM,
+        'OAUTH_USERNAME_CLAIM': request.app.state.config.OAUTH_USERNAME_CLAIM,
+        'OAUTH_EMAIL_CLAIM': request.app.state.config.OAUTH_EMAIL_CLAIM,
+        'OAUTH_PICTURE_CLAIM': request.app.state.config.OAUTH_PICTURE_CLAIM,
+        'ENABLE_OAUTH_ROLE_MANAGEMENT': request.app.state.config.ENABLE_OAUTH_ROLE_MANAGEMENT,
+        'OAUTH_ROLES_CLAIM': request.app.state.config.OAUTH_ROLES_CLAIM,
+        'OAUTH_ALLOWED_ROLES': ','.join(request.app.state.config.OAUTH_ALLOWED_ROLES),
+        'OAUTH_ADMIN_ROLES': ','.join(request.app.state.config.OAUTH_ADMIN_ROLES),
+        'OAUTH_ALLOWED_DOMAINS': ','.join(request.app.state.config.OAUTH_ALLOWED_DOMAINS),
+        'ENABLE_OAUTH_GROUP_MANAGEMENT': request.app.state.config.ENABLE_OAUTH_GROUP_MANAGEMENT,
+        'ENABLE_OAUTH_GROUP_CREATION': request.app.state.config.ENABLE_OAUTH_GROUP_CREATION,
+        'OAUTH_GROUPS_CLAIM': request.app.state.config.OAUTH_GROUPS_CLAIM,
+        'OAUTH_UPDATE_PICTURE_ON_LOGIN': request.app.state.config.OAUTH_UPDATE_PICTURE_ON_LOGIN,
+        'OAUTH_UPDATE_NAME_ON_LOGIN': request.app.state.config.OAUTH_UPDATE_NAME_ON_LOGIN,
+        'OAUTH_UPDATE_EMAIL_ON_LOGIN': request.app.state.config.OAUTH_UPDATE_EMAIL_ON_LOGIN,
+    }
+
+
+class OAuthConfig(BaseModel):
+    ENABLE_OAUTH_SIGNUP: bool = False
+    OAUTH_MERGE_ACCOUNTS_BY_EMAIL: bool = False
+    OAUTH_PROVIDER_NAME: Optional[str] = 'SSO'
+    OAUTH_CLIENT_ID: Optional[str] = None
+    OAUTH_CLIENT_SECRET: Optional[str] = None
+    OPENID_PROVIDER_URL: Optional[str] = None
+    OPENID_REDIRECT_URI: Optional[str] = None
+    OPENID_END_SESSION_ENDPOINT: Optional[str] = None
+    OAUTH_SCOPES: Optional[str] = 'openid email profile'
+    OAUTH_TOKEN_ENDPOINT_AUTH_METHOD: Optional[str] = None
+    OAUTH_CODE_CHALLENGE_METHOD: Optional[str] = None
+    OAUTH_SUB_CLAIM: Optional[str] = None
+    OAUTH_USERNAME_CLAIM: Optional[str] = 'name'
+    OAUTH_EMAIL_CLAIM: Optional[str] = 'email'
+    OAUTH_PICTURE_CLAIM: Optional[str] = 'picture'
+    ENABLE_OAUTH_ROLE_MANAGEMENT: bool = False
+    OAUTH_ROLES_CLAIM: Optional[str] = 'roles'
+    OAUTH_ALLOWED_ROLES: Optional[str] = 'user,admin'
+    OAUTH_ADMIN_ROLES: Optional[str] = 'admin'
+    OAUTH_ALLOWED_DOMAINS: Optional[str] = '*'
+    ENABLE_OAUTH_GROUP_MANAGEMENT: bool = False
+    ENABLE_OAUTH_GROUP_CREATION: bool = False
+    OAUTH_GROUPS_CLAIM: Optional[str] = 'groups'
+    OAUTH_UPDATE_PICTURE_ON_LOGIN: bool = False
+    OAUTH_UPDATE_NAME_ON_LOGIN: bool = False
+    OAUTH_UPDATE_EMAIL_ON_LOGIN: bool = False
+
+
+@router.post('/admin/config/oauth')
+async def update_oauth_config(request: Request, form_data: OAuthConfig, user=Depends(get_admin_user)):
+    request.app.state.config.ENABLE_OAUTH_SIGNUP = form_data.ENABLE_OAUTH_SIGNUP
+    request.app.state.config.OAUTH_MERGE_ACCOUNTS_BY_EMAIL = form_data.OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+    request.app.state.config.OAUTH_PROVIDER_NAME = form_data.OAUTH_PROVIDER_NAME or 'SSO'
+    request.app.state.config.OAUTH_CLIENT_ID = form_data.OAUTH_CLIENT_ID or ''
+    request.app.state.config.OAUTH_CLIENT_SECRET = form_data.OAUTH_CLIENT_SECRET or ''
+    request.app.state.config.OPENID_PROVIDER_URL = form_data.OPENID_PROVIDER_URL or ''
+    request.app.state.config.OPENID_REDIRECT_URI = form_data.OPENID_REDIRECT_URI or ''
+    request.app.state.config.OPENID_END_SESSION_ENDPOINT = form_data.OPENID_END_SESSION_ENDPOINT or ''
+    request.app.state.config.OAUTH_SCOPES = form_data.OAUTH_SCOPES or 'openid email profile'
+    request.app.state.config.OAUTH_TOKEN_ENDPOINT_AUTH_METHOD = form_data.OAUTH_TOKEN_ENDPOINT_AUTH_METHOD or None
+    request.app.state.config.OAUTH_CODE_CHALLENGE_METHOD = form_data.OAUTH_CODE_CHALLENGE_METHOD or None
+    request.app.state.config.OAUTH_SUB_CLAIM = form_data.OAUTH_SUB_CLAIM or None
+    request.app.state.config.OAUTH_USERNAME_CLAIM = form_data.OAUTH_USERNAME_CLAIM or 'name'
+    request.app.state.config.OAUTH_EMAIL_CLAIM = form_data.OAUTH_EMAIL_CLAIM or 'email'
+    request.app.state.config.OAUTH_PICTURE_CLAIM = form_data.OAUTH_PICTURE_CLAIM or 'picture'
+    request.app.state.config.ENABLE_OAUTH_ROLE_MANAGEMENT = form_data.ENABLE_OAUTH_ROLE_MANAGEMENT
+    request.app.state.config.OAUTH_ROLES_CLAIM = form_data.OAUTH_ROLES_CLAIM or 'roles'
+    request.app.state.config.OAUTH_ALLOWED_ROLES = [
+        r.strip() for r in (form_data.OAUTH_ALLOWED_ROLES or 'user,admin').split(',') if r.strip()
+    ]
+    request.app.state.config.OAUTH_ADMIN_ROLES = [
+        r.strip() for r in (form_data.OAUTH_ADMIN_ROLES or 'admin').split(',') if r.strip()
+    ]
+    request.app.state.config.OAUTH_ALLOWED_DOMAINS = [
+        d.strip() for d in (form_data.OAUTH_ALLOWED_DOMAINS or '*').split(',') if d.strip()
+    ]
+    request.app.state.config.ENABLE_OAUTH_GROUP_MANAGEMENT = form_data.ENABLE_OAUTH_GROUP_MANAGEMENT
+    request.app.state.config.ENABLE_OAUTH_GROUP_CREATION = form_data.ENABLE_OAUTH_GROUP_CREATION
+    request.app.state.config.OAUTH_GROUPS_CLAIM = form_data.OAUTH_GROUPS_CLAIM or 'groups'
+    request.app.state.config.OAUTH_UPDATE_PICTURE_ON_LOGIN = form_data.OAUTH_UPDATE_PICTURE_ON_LOGIN
+    request.app.state.config.OAUTH_UPDATE_NAME_ON_LOGIN = form_data.OAUTH_UPDATE_NAME_ON_LOGIN
+    request.app.state.config.OAUTH_UPDATE_EMAIL_ON_LOGIN = form_data.OAUTH_UPDATE_EMAIL_ON_LOGIN
+
+    load_oauth_providers()
+
+    from open_webui.utils.oauth import OAuthManager
+    request.app.state.oauth_manager = OAuthManager(request.app)
+
+    return await get_oauth_config(request, user)
 
 
 ############################
